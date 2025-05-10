@@ -1,169 +1,173 @@
+
 import { useState } from "react";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { Plus, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-export default function CreateTripButton() {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    destination: "",
-    startDate: "",
-    endDate: "",
-  });
+const tripTemplates = [
+  {
+    title: "Weekend Getaway",
+    description: "A short trip perfect for nearby destinations.",
+    icon: <span className="text-3xl">🏙️</span>,
+    duration: "2-3 days"
+  },
+  {
+    title: "City Break",
+    description: "Explore a new city and its attractions.",
+    icon: <span className="text-3xl">🏛️</span>,
+    duration: "3-5 days"
+  },
+  {
+    title: "Beach Vacation",
+    description: "Relax by the ocean with sand and sun.",
+    icon: <span className="text-3xl">🏖️</span>,
+    duration: "5-7 days"
+  },
+  {
+    title: "Road Trip",
+    description: "Travel by car with multiple stops along the way.",
+    icon: <span className="text-3xl">🚗</span>,
+    duration: "3-10 days"
+  },
+  {
+    title: "Family Holiday",
+    description: "Activities and accommodation suitable for all ages.",
+    icon: <span className="text-3xl">👨‍👩‍👧‍👦</span>,
+    duration: "7-14 days"
+  },
+  {
+    title: "Adventure Trip",
+    description: "For outdoor activities and exploring nature.",
+    icon: <span className="text-3xl">🏔️</span>,
+    duration: "5-10 days"
+  },
+  {
+    title: "Start from Scratch",
+    description: "Create your own custom trip completely from scratch.",
+    icon: <span className="text-3xl">✨</span>,
+    duration: "Any"
+  }
+];
+
+const CreateTripButton = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleTemplateClick = (index: number) => {
+    if (index === tripTemplates.length - 1) {
+      // If "Start from Scratch" was selected, go directly to create page
+      window.location.href = "/trips/create";
+      return;
+    }
     
-    // Simulate API call
+    setSelectedTemplate(index);
+    setIsAnimating(true);
+    
+    // Simulate loading for a better UX
     setTimeout(() => {
-      setIsLoading(false);
-      setOpen(false);
-      
-      // Show success message
-      toast({
-        title: "Trip created!",
-        description: `"${formData.name}" has been created successfully.`,
-      });
-      
-      // Trigger confetti animation
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
-      
-      // Reset form
-      setFormData({
-        name: "",
-        destination: "",
-        startDate: "",
-        endDate: "",
-      });
-    }, 1500);
+      window.location.href = "/trips/create";
+    }, 1000);
   };
   
   return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button className="btn-accent flex gap-2">
-            <Plus className="h-5 w-5" />
-            <span>Create New Trip</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>Create a new trip</DialogTitle>
-              <DialogDescription>
-                Start planning your next adventure. You can invite friends later.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Trip name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Summer vacation"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="destination">Destination</Label>
-                <Input
-                  id="destination"
-                  name="destination"
-                  placeholder="Paris, France"
-                  value={formData.destination}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="startDate">Start date</Label>
-                  <Input
-                    id="startDate"
-                    name="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    required
-                  />
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="flex items-center">
+          <Plus className="h-4 w-4 mr-2" />
+          <span>Create Trip</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl text-planit-navy">Create a New Trip</DialogTitle>
+          <DialogDescription>
+            Choose a template to help you get started or create from scratch.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 py-4">
+          {tripTemplates.map((template, i) => (
+            <Card 
+              key={i}
+              className={`cursor-pointer transition-all hover:shadow-md ${
+                selectedTemplate === i ? 'ring-2 ring-planit-teal' : 'hover:border-planit-teal/50'
+              }`}
+              onClick={() => handleTemplateClick(i)}
+            >
+              <CardHeader className={`pb-2 ${i === tripTemplates.length - 1 ? 'bg-gradient-to-br from-planit-teal/10 to-planit-coral/10' : ''}`}>
+                <div className="flex justify-center">
+                  {template.icon}
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="endDate">End date</Label>
-                  <Input
-                    id="endDate"
-                    name="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    min={formData.startDate}
-                    required
-                  />
+              </CardHeader>
+              <CardContent className="pt-3 pb-2 text-center">
+                <CardTitle className="text-md">{template.title}</CardTitle>
+                <CardDescription className="text-xs mt-1.5 h-12 overflow-hidden">
+                  {template.description}
+                </CardDescription>
+              </CardContent>
+              <CardFooter className="pt-0 text-center justify-center">
+                <span className="text-xs text-gray-500">
+                  {template.duration}
+                </span>
+              </CardFooter>
+              
+              {selectedTemplate === i && isAnimating && (
+                <div className="absolute inset-0 bg-planit-teal/5 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-planit-teal"></div>
                 </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="submit"
-                className="bg-planit-teal hover:bg-planit-teal/90"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating..." : "Create trip"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Confetti Animation */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {Array.from({ length: 50 }).map((_, i) => (
+              )}
+            </Card>
+          ))}
+        </div>
+        
+        <div className="flex justify-end mt-4">
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Link to="/trips/create" className="ml-3">
+            <Button>Create from Scratch</Button>
+          </Link>
+        </div>
+        
+        {/* Confetti effect */}
+        <div className="absolute -z-10">
+          {[...Array(100)].map((_, i) => (
             <div
               key={i}
-              className="absolute top-0 left-1/2 animate-confetti"
+              className="confetti"
               style={{
                 left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 8 + 4}px`,
-                height: `${Math.random() * 8 + 4}px`,
-                backgroundColor: [
-                  "#1A9A8B",
-                  "#FF7D63",
-                  "#FFD166",
-                  "#203752",
-                ][Math.floor(Math.random() * 4)],
-                transform: `rotate(${Math.random() * 360}deg)`,
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${Math.random() * 1 + 1.5}s`,
+                width: `${Math.random() * 10 + 5}px`,
+                height: `${Math.random() * 10 + 5}px`,
+                backgroundColor: ['#9b87f5', '#f97316', '#0ea5e9'][Math.floor(Math.random() * 3)],
+                opacity: Math.random(),
+                animation: `fall ${Math.random() * 3 + 2}s linear infinite`,
+                animationDelay: `${Math.random() * 5}s`,
               }}
             />
           ))}
         </div>
-      )}
-    </>
+      </DialogContent>
+    </Dialog>
   );
-}
+};
+
+export default CreateTripButton;

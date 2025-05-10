@@ -9,6 +9,8 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
+import TripPage from "./pages/TripPage";
+import TripCreation from "./pages/TripCreation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/trips/create" element={<TripCreation />} />
+          <Route path="/trips/:tripId" element={<TripPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

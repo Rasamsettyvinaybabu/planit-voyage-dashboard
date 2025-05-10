@@ -162,7 +162,7 @@ export default function CreateTripButton() {
                 animationDuration: `${Math.random() * 1 + 1.5}s`,
               }}
               className="animate-confetti"
-            ></div>
+            />
           ))}
         </div>
       )}

@@ -47,6 +47,7 @@ type Activity = {
   created_by: string;
 };
 
+// Update Vote type to have optional user property
 type Vote = {
   id: string;
   activity_id: string;
@@ -56,7 +57,7 @@ type Vote = {
     id: string;
     avatar_url: string | null;
     full_name: string | null;
-  };
+  } | null;
 };
 
 type Participant = {
@@ -173,12 +174,7 @@ const ActivitiesTab = () => {
             id, 
             activity_id, 
             user_id, 
-            vote,
-            user:profiles(
-              id, 
-              avatar_url, 
-              full_name
-            )
+            vote
           `)
           .in(
             'activity_id', 
@@ -186,7 +182,31 @@ const ActivitiesTab = () => {
           );
         
         if (!votesError && votesData) {
-          setVotes(votesData as Vote[]);
+          // Use type casting to fix the error - we'll handle the user data separately
+          setVotes(votesData as unknown as Vote[]);
+
+          // Fetch user profile data for votes if needed
+          const userIds = [...new Set(votesData.map(vote => vote.user_id))];
+          
+          if (userIds.length > 0) {
+            const { data: usersData } = await supabase
+              .from('profiles')
+              .select('id, avatar_url, full_name')
+              .in('id', userIds);
+              
+            if (usersData) {
+              // Create a user mapping
+              const userMap = new Map(usersData.map(user => [user.id, user]));
+              
+              // Attach user data to votes
+              const votesWithUserData = votesData.map(vote => ({
+                ...vote,
+                user: userMap.get(vote.user_id) || null
+              }));
+              
+              setVotes(votesWithUserData as Vote[]);
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -248,23 +268,44 @@ const ActivitiesTab = () => {
           const activityIds = activities.map(a => a.id);
           
           if (activityIds.length > 0) {
-            const { data, error } = await supabase
+            // First fetch the votes without the user join
+            const { data: votesData } = await supabase
               .from('activity_votes')
               .select(`
                 id, 
                 activity_id, 
                 user_id, 
-                vote,
-                user:profiles(
-                  id, 
-                  avatar_url, 
-                  full_name
-                )
+                vote
               `)
               .in('activity_id', activityIds);
               
-            if (!error && data) {
-              setVotes(data);
+            if (votesData) {
+              // Then fetch user data separately
+              const userIds = [...new Set(votesData.map(vote => vote.user_id))];
+              
+              if (userIds.length > 0) {
+                const { data: usersData } = await supabase
+                  .from('profiles')
+                  .select('id, avatar_url, full_name')
+                  .in('id', userIds);
+                  
+                if (usersData) {
+                  // Create a user mapping
+                  const userMap = new Map(usersData.map(user => [user.id, user]));
+                  
+                  // Attach user data to votes
+                  const votesWithUserData = votesData.map(vote => ({
+                    ...vote,
+                    user: userMap.get(vote.user_id) || null
+                  }));
+                  
+                  setVotes(votesWithUserData as Vote[]);
+                } else {
+                  setVotes(votesData as unknown as Vote[]);
+                }
+              } else {
+                setVotes(votesData as unknown as Vote[]);
+              }
             }
           }
         }

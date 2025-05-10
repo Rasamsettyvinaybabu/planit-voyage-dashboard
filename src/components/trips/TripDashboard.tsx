@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { differenceInDays, format, parseISO } from "date-fns";
@@ -42,6 +41,7 @@ type Trip = {
   created_at: string;
 };
 
+// Update Participant type to have optional user property
 type Participant = {
   id: string;
   user_id: string;
@@ -122,24 +122,42 @@ const TripDashboard = () => {
           .select(`
             id,
             user_id,
-            is_owner,
-            user:profiles(
-              id,
-              full_name,
-              avatar_url,
-              email
-            )
+            is_owner
           `)
           .eq('trip_id', tripId);
 
-        if (!participantsError) {
-          setParticipants(participantsData as Participant[]);
+        if (!participantsError && participantsData) {
+          // Fetch user profile data separately
+          const userIds = participantsData.map(p => p.user_id);
           
-          // Check if current user is owner
-          const isOwner = participantsData.some(
-            (p) => p.user_id === user.id && p.is_owner
-          );
-          setCurrentUserIsOwner(isOwner);
+          const { data: usersData } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, email')
+            .in('id', userIds);
+            
+          // Create participants with user data
+          if (usersData) {
+            const userMap = new Map(usersData.map(user => [user.id, user]));
+            
+            const enhancedParticipants = participantsData.map(p => ({
+              ...p,
+              user: userMap.get(p.user_id) || null
+            }));
+            
+            setParticipants(enhancedParticipants as Participant[]);
+            
+            // Check if current user is owner
+            const user = await supabase.auth.getUser();
+            if (user.data.user) {
+              const isOwner = enhancedParticipants.some(
+                (p) => p.user_id === user.data.user!.id && p.is_owner
+              );
+              setCurrentUserIsOwner(isOwner);
+            }
+          } else {
+            // If we can't fetch user data, set participants with null user data
+            setParticipants(participantsData.map(p => ({ ...p, user: null })) as Participant[]);
+          }
         }
 
         // Fetch activities
@@ -194,25 +212,41 @@ const TripDashboard = () => {
           table: 'trip_participants',
           filter: `trip_id=eq.${tripId}`,
         },
-        () => {
+        async () => {
           // Refetch participants data
-          supabase
+          const { data: participantsData } = await supabase
             .from('trip_participants')
             .select(`
               id,
               user_id,
-              is_owner,
-              user:profiles(
-                id,
-                full_name,
-                avatar_url,
-                email
-              )
+              is_owner
             `)
-            .eq('trip_id', tripId)
-            .then(({ data }) => {
-              if (data) setParticipants(data as Participant[]);
-            });
+            .eq('trip_id', tripId);
+            
+          if (participantsData) {
+            // Fetch user profile data separately
+            const userIds = participantsData.map(p => p.user_id);
+            
+            const { data: usersData } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url, email')
+              .in('id', userIds);
+              
+            // Create participants with user data
+            if (usersData) {
+              const userMap = new Map(usersData.map(user => [user.id, user]));
+              
+              const enhancedParticipants = participantsData.map(p => ({
+                ...p,
+                user: userMap.get(p.user_id) || null
+              }));
+              
+              setParticipants(enhancedParticipants as Participant[]);
+            } else {
+              // If we can't fetch user data, set participants with null user data
+              setParticipants(participantsData.map(p => ({ ...p, user: null })) as Participant[]);
+            }
+          }
         }
       )
       .subscribe();

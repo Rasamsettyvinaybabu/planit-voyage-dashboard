@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -271,23 +270,22 @@ const TripCreationWizard = () => {
       const basicInfo = steps[0].data;
       const tripDetails = steps[1].data;
       
-      // Insert trip into database
+      // Insert trip into database - fix by passing a single object instead of an array
       const { data: trip, error } = await supabase
         .from('trips')
-        .insert([
-          {
-            name: basicInfo.name,
-            destination: basicInfo.destination,
-            start_date: basicInfo.dateRange.from,
-            end_date: basicInfo.dateRange.to,
-            budget: basicInfo.budget ? parseFloat(basicInfo.budget) : null,
-            currency: basicInfo.currency,
-            description: tripDetails.description,
-            privacy: tripDetails.privacy,
-            cover_image_url: tripDetails.coverImageUrl,
-            user_id: user.id,
-          },
-        ])
+        .insert({
+          name: basicInfo.name,
+          destination: basicInfo.destination,
+          start_date: basicInfo.dateRange.from,
+          end_date: basicInfo.dateRange.to,
+          budget: basicInfo.budget ? parseFloat(basicInfo.budget) : null,
+          currency: basicInfo.currency,
+          description: tripDetails.description,
+          privacy: tripDetails.privacy,
+          cover_image_url: tripDetails.coverImageUrl,
+          user_id: user.id,
+          // Note: invite_code is generated automatically by a database trigger
+        })
         .select()
         .single();
       
@@ -422,11 +420,12 @@ const TripCreationWizard = () => {
                       <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                         <CalendarComponent
                           mode="range"
-                          selected={field.value}
+                          selected={field.value as any}
                           onSelect={field.onChange}
                           disabled={(date) => date < new Date("1900-01-01")}
                           initialFocus
                           numberOfMonths={2}
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>

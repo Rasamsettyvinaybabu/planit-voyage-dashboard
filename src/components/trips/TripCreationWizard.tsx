@@ -270,22 +270,24 @@ const TripCreationWizard = () => {
       const basicInfo = steps[0].data;
       const tripDetails = steps[1].data;
       
-      // Insert trip into database - fix by passing a single object instead of an array
+      // Create the trip object
+      const tripData = {
+        name: basicInfo.name,
+        destination: basicInfo.destination,
+        start_date: basicInfo.dateRange.from,
+        end_date: basicInfo.dateRange.to,
+        budget: basicInfo.budget ? parseFloat(basicInfo.budget) : null,
+        currency: basicInfo.currency,
+        description: tripDetails.description || null,
+        privacy: tripDetails.privacy,
+        cover_image_url: tripDetails.coverImageUrl || null,
+        user_id: user.id
+      };
+      
+      // Insert trip into database - fixed by passing a single object
       const { data: trip, error } = await supabase
         .from('trips')
-        .insert({
-          name: basicInfo.name,
-          destination: basicInfo.destination,
-          start_date: basicInfo.dateRange.from,
-          end_date: basicInfo.dateRange.to,
-          budget: basicInfo.budget ? parseFloat(basicInfo.budget) : null,
-          currency: basicInfo.currency,
-          description: tripDetails.description,
-          privacy: tripDetails.privacy,
-          cover_image_url: tripDetails.coverImageUrl,
-          user_id: user.id,
-          // Note: invite_code is generated automatically by a database trigger
-        })
+        .insert(tripData)
         .select()
         .single();
       

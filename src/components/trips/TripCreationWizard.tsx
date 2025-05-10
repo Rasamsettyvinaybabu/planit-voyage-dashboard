@@ -270,7 +270,17 @@ const TripCreationWizard = () => {
       const basicInfo = steps[0].data;
       const tripDetails = steps[1].data;
       
-      // Create the trip object
+      // Generate a random invite code (as a fallback if DB trigger doesn't work)
+      function generateRandomCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+      
+      // Create the trip object with an invite_code
       const tripData = {
         name: basicInfo.name,
         destination: basicInfo.destination,
@@ -281,10 +291,11 @@ const TripCreationWizard = () => {
         description: tripDetails.description || null,
         privacy: tripDetails.privacy,
         cover_image_url: tripDetails.coverImageUrl || null,
-        user_id: user.id
+        user_id: user.id,
+        invite_code: generateRandomCode() // Add a fallback invite code
       };
       
-      // Insert trip into database - fixed by passing a single object
+      // Insert trip into database
       const { data: trip, error } = await supabase
         .from('trips')
         .insert(tripData)

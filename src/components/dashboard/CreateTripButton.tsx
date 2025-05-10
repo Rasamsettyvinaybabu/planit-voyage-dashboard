@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -146,7 +145,7 @@ export default function CreateTripButton() {
           {Array.from({ length: 50 }).map((_, i) => (
             <div
               key={i}
-              className="absolute top-0 left-1/2"
+              className="absolute top-0 left-1/2 animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
                 width: `${Math.random() * 8 + 4}px`,
@@ -161,7 +160,6 @@ export default function CreateTripButton() {
                 animationDelay: `${Math.random() * 0.5}s`,
                 animationDuration: `${Math.random() * 1 + 1.5}s`,
               }}
-              className="animate-confetti"
             />
           ))}
         </div>

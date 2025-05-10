@@ -2,13 +2,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 const ForgotPassword = () => {
   const { toast } = useToast();
+  const { resetPassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   
@@ -27,21 +30,21 @@ const ForgotPassword = () => {
     return true;
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
+      try {
+        await resetPassword(email);
         setIsSubmitted(true);
-        toast({
-          title: "Reset link sent",
-          description: "Check your email for the password reset link.",
-        });
-      }, 1500);
+      } catch (error) {
+        // Error handling is done in the auth context
+        console.error("Password reset error:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
   
@@ -90,7 +93,7 @@ const ForgotPassword = () => {
           </div>
           
           <Button
-            className="w-full bg-planit-teal hover:bg-planit-teal/90"
+            className="w-full bg-planit-teal hover:bg-planit-teal/90 transition-colors"
             onClick={() => setIsSubmitted(false)}
           >
             Send another email
@@ -104,6 +107,7 @@ const ForgotPassword = () => {
               id="email"
               name="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => {
@@ -111,6 +115,7 @@ const ForgotPassword = () => {
                 setError("");
               }}
               className={error ? "border-red-300" : ""}
+              disabled={isLoading}
             />
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
           </div>
@@ -118,10 +123,15 @@ const ForgotPassword = () => {
           <div>
             <Button
               type="submit"
-              className="w-full bg-planit-teal hover:bg-planit-teal/90"
+              className="w-full bg-planit-teal hover:bg-planit-teal/90 transition-colors"
               disabled={isLoading}
             >
-              {isLoading ? "Sending reset link..." : "Send reset link"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending reset link...
+                </>
+              ) : "Send reset link"}
             </Button>
           </div>
         </form>

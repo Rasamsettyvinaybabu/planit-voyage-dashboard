@@ -1,17 +1,22 @@
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { user, signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -23,6 +28,14 @@ const Login = () => {
     email: "",
     password: "",
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, location]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,6 +56,9 @@ const Login = () => {
     if (!formData.email) {
       newErrors.email = "Email is required";
       valid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+      valid = false;
     } else {
       newErrors.email = "";
     }
@@ -59,21 +75,21 @@ const Login = () => {
     return valid;
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        await signIn(formData.email, formData.password);
+        // No need for navigation or toast here as it's handled in the auth context
+      } catch (error) {
+        // Error handling is done in the auth context
+        console.error("Login error:", error);
+      } finally {
         setIsLoading(false);
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        });
-        navigate("/dashboard");
-      }, 1500);
+      }
     }
   };
   
@@ -97,10 +113,12 @@ const Login = () => {
             id="email"
             name="email"
             type="email"
+            autoComplete="email"
             placeholder="you@example.com"
             value={formData.email}
             onChange={handleChange}
             className={errors.email ? "border-red-300" : ""}
+            disabled={isLoading}
           />
           {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
         </div>
@@ -115,15 +133,31 @@ const Login = () => {
               Forgot password?
             </Link>
           </div>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            className={errors.password ? "border-red-300" : ""}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              className={errors.password ? "border-red-300 pr-10" : "pr-10"}
+              disabled={isLoading}
+            />
+            <button 
+              type="button" 
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
         </div>
         
@@ -132,6 +166,7 @@ const Login = () => {
             id="rememberMe"
             checked={formData.rememberMe}
             onCheckedChange={handleCheckboxChange}
+            disabled={isLoading}
           />
           <Label htmlFor="rememberMe" className="text-sm font-normal">
             Remember me for 30 days
@@ -141,10 +176,15 @@ const Login = () => {
         <div>
           <Button
             type="submit"
-            className="w-full bg-planit-teal hover:bg-planit-teal/90"
+            className="w-full bg-planit-teal hover:bg-planit-teal/90 transition-colors"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : "Sign in"}
           </Button>
         </div>
         
@@ -158,7 +198,7 @@ const Login = () => {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" disabled={isLoading} className="transition-all hover:bg-gray-50">
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -179,7 +219,7 @@ const Login = () => {
             </svg>
             Google
           </Button>
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" disabled={isLoading} className="transition-all hover:bg-gray-50">
             <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
             </svg>
